@@ -45,6 +45,7 @@ class Pointcloud2_Aggregator: public rclcpp::Node
         rclcpp::TimerBase::SharedPtr aggregated_publish_timer;
 
         sensor_msgs::msg::PointCloud2::SharedPtr pointcloud_template;
+        std_msgs::msg::Header::SharedPtr latest_header;
         
 };
 
