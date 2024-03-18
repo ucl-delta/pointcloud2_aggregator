@@ -33,6 +33,7 @@ class Pointcloud2_Aggregator: public rclcpp::Node
 
         void pointcloud2_sub_callback(const sensor_msgs::msg::PointCloud2& msg);
         void timer_callback();
+        void insert_msg_into_buffer();
 
         double publish_frequency;
         std::shared_ptr<rclcpp::Duration> time_window;
@@ -42,10 +43,11 @@ class Pointcloud2_Aggregator: public rclcpp::Node
 
         std::shared_ptr<ring<sensor_msgs::msg::PointCloud2::SharedPtr>> buffer;
 
+        rclcpp::TimerBase::SharedPtr receive_timer;
         rclcpp::TimerBase::SharedPtr aggregated_publish_timer;
 
         sensor_msgs::msg::PointCloud2::SharedPtr pointcloud_template;
-        std_msgs::msg::Header::SharedPtr latest_header;
+        sensor_msgs::msg::PointCloud2::SharedPtr latest_msg;
         
 };
 

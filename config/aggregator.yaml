@@ -1,0 +1,13 @@
+/**:
+  ros__parameters:
+    publish_frequency: 5.0
+    time_window: 5.0
+    pointcloud_topic_freq: 10.0
+    pointcloud_topic: "/livox/lidar_192_168_1_108"
+    qos_overrides:
+      /parameter_events:
+        publisher:
+          depth: 1000
+          durability: volatile
+          history: keep_last
+          reliability: best_effort

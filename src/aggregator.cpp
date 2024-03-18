@@ -3,13 +3,12 @@
 using namespace std::chrono_literals;
 
 Pointcloud2_Aggregator:: Pointcloud2_Aggregator(): 
-    Node("pointcloud2_aggregator"), 
-    publish_frequency(10)
+    Node("pointcloud2_aggregator")
 {
     // Declare Parameters
     this->declare_parameter("publish_frequency", 5.0);
-    this->declare_parameter("time_window", 1.0);
-    this->declare_parameter("pointcloud_topic_freq", 10.0);
+    this->declare_parameter("time_window", 5.0);
+    this->declare_parameter("pointcloud_topic_freq", 1.0);
     this->declare_parameter("pointcloud_topic", "/livox/lidar");
 
     // Set Frequency
@@ -29,8 +28,6 @@ Pointcloud2_Aggregator:: Pointcloud2_Aggregator():
     int messages_per_time_window = std::ceil(time_window / topic_rate);
     this->buffer = std::make_shared<ring<sensor_msgs::msg::PointCloud2::SharedPtr>>(messages_per_time_window);
 
-    
-    
 
     // Create Subscriber
     std::string topic_name = this->get_parameter("pointcloud_topic").as_string();
@@ -43,8 +40,12 @@ Pointcloud2_Aggregator:: Pointcloud2_Aggregator():
     this->aggregator_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(topic_name_agg, this->publish_frequency);
 
     // Create Timer
-    this->aggregated_publish_timer = this->create_wall_timer(
+    this->receive_timer = this->create_wall_timer(
                 std::chrono::duration<float>(1.0/this->publish_frequency), std::bind(&Pointcloud2_Aggregator::timer_callback, this));
+
+    this->aggregated_publish_timer = this->create_wall_timer(
+                std::chrono::duration<float>(topic_rate), std::bind(&Pointcloud2_Aggregator::insert_msg_into_buffer, this));
+
 
     RCLCPP_INFO(this->get_logger(), "Pointcloud2 Aggregator Initialised for %s", topic_name.c_str());
 };
@@ -68,20 +69,27 @@ void Pointcloud2_Aggregator::pointcloud2_sub_callback(const sensor_msgs::msg::Po
         } 
     }
 
-    // Save the latest header
-    this->latest_header = std::make_shared<std_msgs::msg::Header>(msg.header);
-
-    // Insert the entry into the ring buffer 
-    this->buffer->push(shared_msg);
+    // Save the latest msg
+    this->latest_msg = shared_msg;
 }
+
+
+void Pointcloud2_Aggregator::insert_msg_into_buffer()
+{
+    if(this->latest_msg) {
+        // Insert the entry into the ring buffer at down/upsampling rate
+        this->buffer->push(this->latest_msg);
+    }
+}
+
 
 void Pointcloud2_Aggregator::timer_callback() 
 {
     auto pc = sensor_msgs::msg::PointCloud2();
     if(!this->pointcloud_template) {
-        RCLCPP_INFO(this->get_logger(), "No Pointclouds Receied Yet");
+        RCLCPP_INFO(this->get_logger(), "No Pointclouds Received Yet");
     } else {
-        pc.header = *(this->latest_header);
+        pc.header = this->latest_msg->header;
         pc.height = this->pointcloud_template->height;
         pc.width = 0;
         pc.fields = this->pointcloud_template->fields; // (Probably need to manual copy)
@@ -101,17 +109,16 @@ void Pointcloud2_Aggregator::timer_callback()
         pc.row_step += cloud->row_step;
     }
 
-    // RCLCPP_INFO(this->get_logger(), "Total Cloud Width: %i, Total Row Step: %i", pc.width, pc.row_step);
+    RCLCPP_DEBUG(this->get_logger(), "Total Cloud Width: %i, Total Row Step: %i (%dMb)", pc.width, pc.row_step, pc.row_step/1000000);
 
     int copy_offset = 0;
-    uint8_t data[(int)pc.row_step * (int)pc.height];
+    std::vector<uint8_t> datavec(pc.row_step * pc.height);
     for (size_t i = 0; i < this->buffer->size(); ++i) {
         sensor_msgs::msg::PointCloud2::SharedPtr cloud = this->buffer->at(i);
-        // RCLCPP_INFO(this->get_logger(), "COPY from %p to %p, size: %i", data+copy_offset, cloud->data.data(), cloud->row_step);
-        memcpy(data+copy_offset, cloud->data.data(), cloud->row_step);
+        // RCLCPP_INFO(this->get_logger(), "COPY from %p to %p, size: %i", datavec.data()+copy_offset, cloud->data.data(), cloud->row_step);
+        memcpy(datavec.data()+copy_offset, cloud->data.data(), cloud->row_step);
         copy_offset += cloud->point_step;
     }
-    std::vector<uint8_t> datavec(data, data + pc.row_step);
     pc.data = datavec;
 
     this->aggregator_pub->publish(pc);
