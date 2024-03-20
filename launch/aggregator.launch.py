@@ -23,7 +23,7 @@ def launch_node(context, *args, **kwargs):
         executable="aggregator",
         name="pointcloud2_aggregator",
         parameters=[aggregator_config],
-        ros_arguments=["--log-level", "debug"]
+        # ros_arguments=["--log-level", "debug"]
     )]
 
 def generate_launch_description():

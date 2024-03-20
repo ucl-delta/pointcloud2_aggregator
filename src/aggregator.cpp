@@ -30,14 +30,14 @@ Pointcloud2_Aggregator:: Pointcloud2_Aggregator():
 
 
     // Create Subscriber
-    std::string topic_name = this->get_parameter("pointcloud_topic").as_string();
-    this->pointcloud2_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-                topic_name, 5, std::bind(&Pointcloud2_Aggregator::pointcloud2_sub_callback, this, std::placeholders::_1));
+    this->topic_name = this->get_parameter("pointcloud_topic").as_string();
+    // this->pointcloud2_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+    //             topic_name, 5, std::bind(&Pointcloud2_Aggregator::pointcloud2_sub_callback, this, std::placeholders::_1));
 
     // Create Publisher
-    std::string topic_name_agg = this->get_parameter("pointcloud_topic").as_string();
-    topic_name_agg.append("_aggregated");
-    this->aggregator_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(topic_name_agg, this->publish_frequency);
+    this->topic_name_agg = this->get_parameter("pointcloud_topic").as_string();
+    this->topic_name_agg.append("_aggregated");
+    this->aggregator_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(this->topic_name_agg, this->publish_frequency);
 
     // Create Timer
     this->receive_timer = this->create_wall_timer(
@@ -76,7 +76,22 @@ void Pointcloud2_Aggregator::pointcloud2_sub_callback(const sensor_msgs::msg::Po
 
 void Pointcloud2_Aggregator::insert_msg_into_buffer()
 {
-    if(this->latest_msg) {
+    auto num_subs = this->count_subscribers(this->topic_name_agg);
+    // RCLCPP_INFO(this->get_logger(), "%s has %lu subscribers", this->topic_name_agg.c_str(), num_subs);
+    // Check if any subscribers to our publisher
+    if( num_subs >= 1 && !this->pointcloud2_sub){
+        // Subscription not created
+        RCLCPP_INFO(this->get_logger(), "Subscriptions detected, starting subscription to %s", this->topic_name.c_str());
+        this->pointcloud2_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+            this->topic_name, 5, std::bind(&Pointcloud2_Aggregator::pointcloud2_sub_callback, this, std::placeholders::_1));
+    } 
+    else if(num_subs < 1 && this->pointcloud2_sub) {
+        // Already Created, but subs gone below one Therefore Stop Subscription
+        RCLCPP_INFO(this->get_logger(), "No subscriptions detected, deleting subscription to %s", this->topic_name.c_str());
+        this->pointcloud2_sub = nullptr;
+        this->buffer->clear();
+    }
+    else if(this->latest_msg) {
         // Insert the entry into the ring buffer at down/upsampling rate
         this->buffer->push(this->latest_msg);
     }
@@ -88,6 +103,7 @@ void Pointcloud2_Aggregator::timer_callback()
     auto pc = sensor_msgs::msg::PointCloud2();
     if(!this->pointcloud_template) {
         RCLCPP_INFO(this->get_logger(), "No Pointclouds Received Yet");
+        return;
     } else {
         pc.header = this->latest_msg->header;
         pc.height = this->pointcloud_template->height;
@@ -115,9 +131,9 @@ void Pointcloud2_Aggregator::timer_callback()
     std::vector<uint8_t> datavec(pc.row_step * pc.height);
     for (size_t i = 0; i < this->buffer->size(); ++i) {
         sensor_msgs::msg::PointCloud2::SharedPtr cloud = this->buffer->at(i);
-        // RCLCPP_INFO(this->get_logger(), "COPY from %p to %p, size: %i", datavec.data()+copy_offset, cloud->data.data(), cloud->row_step);
+        RCLCPP_DEBUG(this->get_logger(), "COPY from %p to %p, size: %i", cloud->data.data(), datavec.data()+copy_offset, cloud->row_step);
         memcpy(datavec.data()+copy_offset, cloud->data.data(), cloud->row_step);
-        copy_offset += cloud->point_step;
+        copy_offset += cloud->row_step;
     }
     pc.data = datavec;
 

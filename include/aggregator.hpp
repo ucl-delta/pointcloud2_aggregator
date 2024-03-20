@@ -36,6 +36,8 @@ class Pointcloud2_Aggregator: public rclcpp::Node
         void insert_msg_into_buffer();
 
         double publish_frequency;
+        std::string topic_name;
+        std::string topic_name_agg;
         std::shared_ptr<rclcpp::Duration> time_window;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_sub;
 
