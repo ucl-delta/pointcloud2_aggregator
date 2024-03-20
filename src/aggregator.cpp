@@ -102,7 +102,7 @@ void Pointcloud2_Aggregator::timer_callback()
 {
     auto pc = sensor_msgs::msg::PointCloud2();
     if(!this->pointcloud_template) {
-        RCLCPP_INFO(this->get_logger(), "No Pointclouds Received Yet");
+        RCLCPP_DEBUG(this->get_logger(), "No Pointclouds Received Yet");
         return;
     } else {
         pc.header = this->latest_msg->header;
