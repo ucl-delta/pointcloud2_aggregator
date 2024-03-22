@@ -68,6 +68,30 @@ It reads from the `aggregate.yaml` config as before.
 
 > Note this only reacts to currently broadcasting topics at the time of running. It does not spin up and down aggregate nodes in real time (need to understand how composite nodes work). 
 
+### rosbag to las script
+
+There exists a rosbag to las script which attempts to convert the lidar entries in the rosbag to the LAS file format. You will need to install the following dependencies:
+
+```
+```
+pip install rosbags laspy pointcloud2 tqdm
+```
+
+Call this python file with a link to the rosbag folder and the ros topic and where to output the las file
+
+```
+python3 rosbag2_to_LAS.py rosbag2_livox_people_detection/ /livox/lidar output_folder
+```
+
+> There is a `--max-points-per-file` which controls the number of points that should be included in each LAS file before a new one is created. 
+
+It is also callable from inside ROS after buildingby using
+
+```
+ros2 run pointcloud2_aggregator rosbag2_to_LAS.py [args]
+```
+
+
 ## Future Improvements
 
 - A node which monitors the current topics and automatically spins up and down an aggregate node as a component when required. 

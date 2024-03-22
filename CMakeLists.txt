@@ -24,8 +24,12 @@ target_include_directories(${NODE_NAME} PUBLIC
   $<INSTALL_INTERFACE:include>)
 target_compile_features(${NODE_NAME} PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
+
 install(TARGETS ${NODE_NAME}
   DESTINATION lib/${PROJECT_NAME})
+
+install(PROGRAMS scripts/rosbag2_to_LAS.py 
+DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY
   launch

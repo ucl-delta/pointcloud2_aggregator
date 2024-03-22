@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 """
 Python file which attempts to convert a ros2 humble rosbag containing lidar data into the LAS file format. 
 
