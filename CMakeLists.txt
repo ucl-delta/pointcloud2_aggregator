@@ -19,12 +19,13 @@ find_package(geometry_msgs REQUIRED)
 # This chunk is to enable the aggregator as a component
 set(NODE_NAME aggregator_comp)
 set(NODE_NAME_COMPONENT ${NODE_NAME}_component)
-add_library(${NODE_NAME_COMPONENT} src/aggregator.cpp)
+add_library(${NODE_NAME_COMPONENT} SHARED src/aggregator.cpp)
 ament_target_dependencies(${NODE_NAME_COMPONENT}
   rclcpp rclcpp_components std_msgs geometry_msgs sensor_msgs)
 target_include_directories(${NODE_NAME_COMPONENT} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
+target_compile_definitions(${NODE_NAME_COMPONENT} PRIVATE "COMPOSITION_BUILDING_DLL")
 target_compile_features(${NODE_NAME_COMPONENT} PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 rclcpp_components_register_node(
   ${NODE_NAME_COMPONENT}
@@ -37,8 +38,20 @@ add_executable(aggregator src/aggregator_node.cpp)
 target_link_libraries(aggregator ${NODE_NAME_COMPONENT})
 ament_target_dependencies(aggregator rclcpp)
 
+##################
+# This is the monitor node
+add_executable(monitor src/monitor_node.cpp)
+target_link_libraries(monitor ${NODE_NAME_COMPONENT})
+ament_target_dependencies(monitor rclcpp)
+
 #######################
 # This Installs the aggregator component as a runtime library
+if(NOT WIN32)
+  ament_environment_hooks(
+    "${ament_cmake_package_templates_ENVIRONMENT_HOOK_LIBRARY_PATH}"
+  )
+endif()
+
 ament_export_targets(export_${NODE_NAME_COMPONENT})
 install(TARGETS ${NODE_NAME_COMPONENT}
         EXPORT export_${NODE_NAME_COMPONENT}
@@ -48,8 +61,8 @@ install(TARGETS ${NODE_NAME_COMPONENT}
 )
 
 ##########################
-# This installs the aggregator node
-install(TARGETS aggregator
+# This installs the aggregator and monitor node
+install(TARGETS aggregator monitor
         DESTINATION lib/${PROJECT_NAME}
 )
 
