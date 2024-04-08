@@ -23,11 +23,14 @@
 
 #include "ringbuffer.hpp"
 
+namespace pointcloud2
+{
+
 class Pointcloud2_Aggregator: public rclcpp::Node 
 {
 
     public:
-        Pointcloud2_Aggregator();
+        Pointcloud2_Aggregator(const rclcpp::NodeOptions& options);
 
     private:
 
@@ -52,5 +55,6 @@ class Pointcloud2_Aggregator: public rclcpp::Node
         sensor_msgs::msg::PointCloud2::SharedPtr latest_msg;
         
 };
+}
 
 #endif

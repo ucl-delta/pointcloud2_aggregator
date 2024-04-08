@@ -2,8 +2,11 @@
 
 using namespace std::chrono_literals;
 
-Pointcloud2_Aggregator:: Pointcloud2_Aggregator(): 
-    Node("pointcloud2_aggregator")
+namespace pointcloud2
+{
+
+Pointcloud2_Aggregator:: Pointcloud2_Aggregator(const rclcpp::NodeOptions& options): 
+    Node("pointcloud2_aggregator", options)
 {
     // Declare Parameters
     this->declare_parameter("publish_frequency", 5.0);
@@ -139,3 +142,8 @@ void Pointcloud2_Aggregator::timer_callback()
 
     this->aggregator_pub->publish(pc);
 }
+
+}
+
+#include <rclcpp_components/register_node_macro.hpp>
+RCLCPP_COMPONENTS_REGISTER_NODE(pointcloud2::Pointcloud2_Aggregator)
