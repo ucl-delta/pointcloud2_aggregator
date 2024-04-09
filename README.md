@@ -68,6 +68,20 @@ It reads from the `aggregate.yaml` config as before.
 
 > Note this only reacts to currently broadcasting topics at the time of running. It does not spin up and down aggregate nodes in real time (need to understand how composite nodes work). 
 
+### Monitor Node
+
+This monitor node uses ROS2 components to dynamically spin up aggregator nodes as lidar streams are detected. 
+
+This uses the ComponentManager class and uses it to load and unload aggregation nodes 
+
+The aggregator is now by default a ros2 component and then launch files for everything have been updated accordingly. 
+
+You must run the monitor using the provided launch script (which ensures that the Multi-Threaded Component Manager is started properly)
+
+```bash
+ros2 launch pointcloud2_aggregator monitor.launch.py
+```
+
 ### rosbag to las script
 
 There exists a rosbag to las script which attempts to convert the lidar entries in the rosbag to the LAS file format. You will need to install the following dependencies:
