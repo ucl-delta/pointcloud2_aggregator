@@ -61,10 +61,10 @@ namespace pointcloud2 {
 
     void AggregateMonitorLoader::timer_callback() 
     {
-        RCLCPP_INFO(this->get_logger(), "----------------Timer Callback----------------");
+        // RCLCPP_INFO(this->get_logger(), "----------------Timer Callback----------------");
 
         if(this->requested_ids.size() > 0) {
-            RCLCPP_INFO(this->get_logger(), "there are existing service requested, skipping this loop");
+            RCLCPP_INFO(this->get_logger(), "There are existing service requested, skipping this loop");
             for(const auto& v: this->requested_ids) {
                 RCLCPP_INFO(this->get_logger(), "%s", v.c_str());
             }
