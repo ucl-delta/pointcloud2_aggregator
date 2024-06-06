@@ -30,7 +30,7 @@ import pointcloud2 as pc2
 import os
 from tqdm import tqdm
 
-def convert_rosbag_to_las(rosbag_file, ros_topic, output_las_folder, max_points):
+def convert_rosbag_to_las(rosbag_file, ros_topic, output_las_folder, max_points, start_time, duration):
     rosbag_file = os.path.normpath(rosbag_file)
     rosbag_file_basename = os.path.basename(rosbag_file)
 
@@ -45,7 +45,7 @@ def convert_rosbag_to_las(rosbag_file, ros_topic, output_las_folder, max_points)
     current_num_points = 0
     current_num_point_records = 0
 
-    output_las_folder = os.path.join(output_las_folder, rosbag_file_basename)
+    output_las_folder = os.path.join(output_las_folder, rosbag_file_basename, ros_topic.split("/")[-1])
     try:
         os.makedirs(output_las_folder)
     except Exception as e:
@@ -58,12 +58,20 @@ def convert_rosbag_to_las(rosbag_file, ros_topic, output_las_folder, max_points)
     file_name = f"{output_las_name}_{current_las_file_id}.las"
     writer_las = laspy.open(file_name, mode='w', header=las_header)
 
+    start_time_ns = start_time * 1e9
+    if duration > 0:
+        end_time_ns = start_time_ns + duration * 1e9
+    else:
+        end_time_ns = None
+
     try:
         # Create reader instance and open for reading.
         with AnyReader([bagpath], default_typestore=typestore) as reader:
 
             connections = [x for x in reader.connections if str(x).startswith(ros_topic)]
-            for connection, timestamp, rawdata in tqdm(reader.messages(connections=connections), total=reader.message_count):
+            if len(connections) == 0:
+                raise RuntimeError(f"No Connections with ros topic: {ros_topic}")
+            for connection, timestamp, rawdata in tqdm(reader.messages(connections=connections, start=start_time_ns, stop=end_time_ns), total=reader.message_count):
                 if connection.msgtype == "sensor_msgs/msg/PointCloud2":
                     # msg is tof type sensor_msgs/msg/PointCloud2
                     msg = reader.deserialize(rawdata, connection.msgtype)
@@ -119,10 +127,13 @@ def main():
     parser.add_argument('rosbag_folder', type=str, help='Path to ROS2 rosbag file')
     parser.add_argument('ros_topic', type=str, help='ROS topic containing PointCloud2 messages')
     parser.add_argument('output_las_folder', type=str, help='Output LAS folder path')
+    parser.add_argument('--start_time', '-st', type=int, default=0, help="Seconds from the start of the bag to start conversion")
+    parser.add_argument('--conversion_duration', '-d', type=int, default=-1, help="duration of the rosbag from the start time to convert")
     parser.add_argument("--max-points-per-file", "-m", type=int, default=10**7, help="Maximum number of points per las file")
     args = parser.parse_args()
 
-    convert_rosbag_to_las(args.rosbag_folder, args.ros_topic, args.output_las_folder, args.max_points_per_file)
+    convert_rosbag_to_las(args.rosbag_folder, args.ros_topic, args.output_las_folder, args.max_points_per_file,
+                          args.start_time, args.conversion_duration)
 
 if __name__ == "__main__":
     main()
