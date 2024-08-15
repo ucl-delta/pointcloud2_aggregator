@@ -24,7 +24,7 @@ def generate_launch_description():
 
     aggregator_config_path = os.path.join(
         get_package_share_directory('pointcloud2_aggregator'),
-        'config', 'aggregator.yaml'
+        'config', 'monitor.yaml'
     )
 
     # Aggregator Parameters

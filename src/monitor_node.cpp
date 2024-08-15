@@ -37,7 +37,7 @@ namespace pointcloud2 {
         Node("pointcloud2_aggregator_monitor")
     {
         // Declare Parameters
-        this->declare_parameter("node_config", "");
+        this->declare_parameter("node_config", "config/monitor.yaml");
         this->declare_parameter("topic_read_interval", 5.0); // seconds 
         this->declare_parameter("lidar_topic_regex", "^\\/livox\\/lidar_(?!.*aggregate).*$"); // By default only take expressions matching /livox/lidar_* but exclude strings that include the wod aggregate anywhere
 
@@ -166,7 +166,7 @@ namespace pointcloud2 {
         if(node_config != ""){
             std::vector<rcl_interfaces::msg::Parameter> param;
             // auto config_file_param = rcl_interfaces::msg::Parameter();
-            // config_file_param.name = node_config;
+            // config_file_param.name = node_config; // This doesnt work unfortunately
             auto config_file_param = rcl_interfaces::msg::Parameter();
             config_file_param.name = "pointcloud_topic";
             config_file_param.value.type = 4;

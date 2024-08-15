@@ -1,0 +1,4 @@
+# see https://github.com/ros2/launch_ros/issues/156
+publish_frequency: 5.0
+time_window: 2.0
+pointcloud_topic_freq: 10.0

@@ -10,8 +10,8 @@ Pointcloud2_Aggregator:: Pointcloud2_Aggregator(const rclcpp::NodeOptions& optio
 {
     // Declare Parameters
     this->declare_parameter("publish_frequency", 5.0);
-    this->declare_parameter("time_window", 5.0);
-    this->declare_parameter("pointcloud_topic_freq", 1.0);
+    this->declare_parameter("time_window", 1.0);
+    this->declare_parameter("pointcloud_topic_freq", 10.0);
     this->declare_parameter("pointcloud_topic", "/livox/lidar");
 
     // Set Frequency
@@ -40,7 +40,7 @@ Pointcloud2_Aggregator:: Pointcloud2_Aggregator(const rclcpp::NodeOptions& optio
     // Create Publisher
     this->topic_name_agg = this->get_parameter("pointcloud_topic").as_string();
     this->topic_name_agg.append("_aggregated");
-    this->aggregator_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(this->topic_name_agg, this->publish_frequency);
+    this->aggregator_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>(this->topic_name_agg, rclcpp::SensorDataQoS());
 
     // Create Timer
     this->receive_timer = this->create_wall_timer(
@@ -51,6 +51,8 @@ Pointcloud2_Aggregator:: Pointcloud2_Aggregator(const rclcpp::NodeOptions& optio
 
 
     RCLCPP_INFO(this->get_logger(), "Pointcloud2 Aggregator Initialised for %s", topic_name.c_str());
+    RCLCPP_INFO(this->get_logger(), "publish_frequency: %f, time_window: %f, pointcloud_topic_freq: %f", 
+        this->publish_frequency, time_window, topic_freq);
 };
 
 void Pointcloud2_Aggregator::pointcloud2_sub_callback(const sensor_msgs::msg::PointCloud2& msg) 
@@ -84,9 +86,10 @@ void Pointcloud2_Aggregator::insert_msg_into_buffer()
     // Check if any subscribers to our publisher
     if( num_subs >= 1 && !this->pointcloud2_sub){
         // Subscription not created
+        auto default_qos = rclcpp::QoS(rclcpp::SensorDataQoS());
         RCLCPP_INFO(this->get_logger(), "Subscriptions detected, starting subscription to %s", this->topic_name.c_str());
         this->pointcloud2_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-            this->topic_name, 5, std::bind(&Pointcloud2_Aggregator::pointcloud2_sub_callback, this, std::placeholders::_1));
+            this->topic_name, default_qos, std::bind(&Pointcloud2_Aggregator::pointcloud2_sub_callback, this, std::placeholders::_1));
     } 
     else if(num_subs < 1 && this->pointcloud2_sub) {
         // Already Created, but subs gone below one Therefore Stop Subscription

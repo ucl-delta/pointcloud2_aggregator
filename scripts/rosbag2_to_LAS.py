@@ -29,6 +29,7 @@ import numpy as np
 import pointcloud2 as pc2
 import os
 from tqdm import tqdm
+from pprint import pprint
 
 def convert_rosbag_to_las(rosbag_file, ros_topic, output_las_folder, max_points, start_time, duration):
     rosbag_file = os.path.normpath(rosbag_file)
@@ -68,8 +69,10 @@ def convert_rosbag_to_las(rosbag_file, ros_topic, output_las_folder, max_points,
         # Create reader instance and open for reading.
         with AnyReader([bagpath], default_typestore=typestore) as reader:
 
-            connections = [x for x in reader.connections if str(x).startswith(ros_topic)]
+            connections = [x for x in reader.connections if str(x.topic).startswith(ros_topic)]
             if len(connections) == 0:
+                print("Topics Found:")
+                pprint([r.topic for r in reader.connections])
                 raise RuntimeError(f"No Connections with ros topic: {ros_topic}")
             for connection, timestamp, rawdata in tqdm(reader.messages(connections=connections, start=start_time_ns, stop=end_time_ns), total=reader.message_count):
                 if connection.msgtype == "sensor_msgs/msg/PointCloud2":

@@ -15,6 +15,8 @@ find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_sensor_msgs REQUIRED)
 
 # This chunk is to enable the aggregator as a component
 set(NODE_NAME aggregator_comp)
@@ -44,6 +46,17 @@ add_executable(monitor src/monitor_node.cpp)
 target_link_libraries(monitor ${NODE_NAME_COMPONENT})
 ament_target_dependencies(monitor rclcpp)
 
+##################
+# This is the combining node
+add_executable(combine src/combiner_node.cpp)
+ament_target_dependencies(combine
+  rclcpp rclcpp_components std_msgs 
+  geometry_msgs sensor_msgs tf2_ros tf2_sensor_msgs)
+target_include_directories(combine PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(combine rclcpp)
+
 #######################
 # This Installs the aggregator component as a runtime library
 if(NOT WIN32)
@@ -62,7 +75,7 @@ install(TARGETS ${NODE_NAME_COMPONENT}
 
 ##########################
 # This installs the aggregator and monitor node
-install(TARGETS aggregator monitor
+install(TARGETS aggregator monitor combine
         DESTINATION lib/${PROJECT_NAME}
 )
 
