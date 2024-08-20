@@ -17,6 +17,9 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_sensor_msgs REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(PCL REQUIRED COMPONENTS common io filters)
+
 
 # This chunk is to enable the aggregator as a component
 set(NODE_NAME aggregator_comp)
@@ -57,6 +60,30 @@ target_include_directories(combine PUBLIC
   $<INSTALL_INTERFACE:include>)
 ament_target_dependencies(combine rclcpp)
 
+##################
+# This is the transform node
+add_executable(transform src/transform_node.cpp)
+ament_target_dependencies(transform
+  rclcpp rclcpp_components std_msgs 
+  geometry_msgs sensor_msgs tf2_ros tf2_sensor_msgs)
+target_include_directories(transform PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(transform rclcpp)
+
+##################
+# This is the cropbox node
+add_executable(cropbox src/cropbox_node.cpp)
+ament_target_dependencies(cropbox
+  rclcpp rclcpp_components std_msgs PCL pcl_conversions
+  geometry_msgs sensor_msgs tf2_ros tf2_sensor_msgs)
+target_include_directories(cropbox PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  ${PCL_INCLUDE_DIRS}
+  $<INSTALL_INTERFACE:include>)
+target_link_libraries(cropbox ${PCL_LIBRARIES})
+ament_target_dependencies(cropbox rclcpp)
+
 #######################
 # This Installs the aggregator component as a runtime library
 if(NOT WIN32)
@@ -75,7 +102,7 @@ install(TARGETS ${NODE_NAME_COMPONENT}
 
 ##########################
 # This installs the aggregator and monitor node
-install(TARGETS aggregator monitor combine
+install(TARGETS aggregator monitor combine cropbox transform
         DESTINATION lib/${PROJECT_NAME}
 )
 
